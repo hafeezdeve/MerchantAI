@@ -11,6 +11,12 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405, headers: { ...corsHeaders, "Content-Type": "application/json", Allow: "POST, OPTIONS" },
+    });
+  }
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -22,7 +28,10 @@ Deno.serve(async (req: Request) => {
 
     // Get the auth token from the request to identify the user
     const authHeader = req.headers.get("Authorization") || "";
-    const token = authHeader.replace("Bearer ", "");
+    const token = /^Bearer\s+(\S+)$/i.exec(authHeader)?.[1];
+    if (!token) return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
     const userClient = createClient(supabaseUrl, publicKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
@@ -40,13 +49,14 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(supabaseUrl, serviceKey);
 
     // Get user's business
-    const { data: profile } = await admin
+    const { data: profile, error: profileError } = await admin
       .from("profiles")
-      .select("business_id")
+      .select("business_id, is_active")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (!profile) {
+    if (profileError) throw profileError;
+    if (!profile || !profile.is_active) {
       return new Response(JSON.stringify({ error: "No business profile found" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -289,7 +299,7 @@ Deno.serve(async (req: Request) => {
       notes: "Demo: Shop rent for the month",
     });
     await admin.from("transaction_items").insert({
-      transaction_id: (await admin.from("transactions").select("id").eq("transaction_number", "EXP-DEMO-001").maybeSingle()).data?.id,
+      transaction_id: (await admin.from("transactions").select("id").eq("transaction_number", "EXP-DEMO-001").eq("business_id", businessId).maybeSingle()).data?.id,
       description: "Monthly shop rent", quantity: 1, unit_price: 25000, unit_cost_snapshot: 25000, line_total: 25000,
     });
 

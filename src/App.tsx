@@ -91,7 +91,7 @@ export default function App() {
           <h1 className="text-2xl font-bold">Connect MerchantAI to Supabase</h1>
           <p>{supabaseConfigurationError}</p>
           <ol className="list-decimal pl-5 space-y-2">
-            <li>Copy project/.env.example to project/.env.local.</li>
+            <li>Copy .env.example to .env.local.</li>
             <li>Copy your project URL and publishable key from the Supabase dashboard into that file.</li>
             <li>Stop and restart npm run dev. For hosting, set the same variables and rebuild.</li>
           </ol>

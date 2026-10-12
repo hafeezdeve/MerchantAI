@@ -3,7 +3,7 @@ export function readSupabaseConfig(env: Record<string, unknown>) {
   const key = String(env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY || '').trim();
   let error: string | null = null;
   if (!url || !key) {
-    error = 'Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in project/.env.local.';
+    error = 'Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in .env.local.';
   } else {
     try {
       const parsed = new URL(url);
